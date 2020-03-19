@@ -1,8 +1,6 @@
 import {ExtensionContext,window,commands,workspace,ProgressLocation,Progress,ProgressOptions} from 'vscode'
 import { exec, ExecException } from 'child_process'
 
-const outputChannel = window.createOutputChannel("Fit Code")
-
 var cp = require('child_process')
 
 function fitCommand(fitCmd: string) {
@@ -19,7 +17,10 @@ function fitCommand(fitCmd: string) {
 export function activate(context: ExtensionContext) {
 
   console.log('Stainless Fit extension is now active!')
+  const outputChannel = window.createOutputChannel("Fit Code")
   outputChannel.appendLine(`Stainless Fit extension is now active!`)
+
+	let NEXT_TERM_ID = 1;
 
   cp.exec(`${fit()}`,
     function (error: string, stdout: string, stderr: string) {
@@ -118,37 +119,35 @@ async function sh(cmd: string): Promise<string> {
   })
 }
 
-function defaultOnSuccess(stdout: string): void {
-  console.log(stdout)
-  window.showInformationMessage(stdout)
-  outputChannel.append(stdout)
-}
+// function defaultOnSuccess(stdout: string): void {
+//   console.log(stdout)
+//   window.showInformationMessage(stdout)
+//   outputChannel.append(stdout)
+// }
 
-function defaultOnFailure(cr:CommandReturn): void {
-  console.log(cr.toString)
-  window.showErrorMessage("Error occurred, see output")
-  outputChannel.append(cr.toString())
-}
+// function defaultOnFailure(cr:CommandReturn): void {
+//   console.log(cr.toString)
+//   window.showErrorMessage("Error occurred, see output")
+//   outputChannel.append(cr.toString())
+// }
 
-function run(cmd: string, onSuccess = defaultOnSuccess, onFailure = defaultOnFailure): Thenable<string> {
+function run(cmd: string): void {
   let running = `Running ${cmd}`
   console.log(running)
 
   let progress = window.withProgress({
     location: ProgressLocation.Notification,
     title: running,
-    cancellable: false
+    cancellable: true
   }, (progress, token) => {
-    // token.onCancellationRequested(() => {
-    //   console.log("User canceled the long running operation")
-    // })
+    token.onCancellationRequested(() => {
+      console.log("User canceled the long running operation")
+    })
     let promise = sh(cmd)
     promise.then(onSuccess)
     promise.catch(onFailure)
     return promise
   })
-
-  return progress
 }
 
 class CommandReturn{
